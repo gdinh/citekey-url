@@ -8,6 +8,13 @@
  */
 
 let _origLaunchURL = null;
+// Change prefix to change the URL schema
+// Recommend not trying to override the default zotero://select
+// funny stuff may happen
+const citekey_url_prefix = "zotero://citekey/select/";
+
+let _addedMenuitem = null;
+let _menuDoc = null;
 
 function install(data, reason) {}
 function uninstall(data, reason) {}
@@ -25,6 +32,99 @@ function notifyNotFound(citekey) {
     // Fallback: don't break flow if notification API differs
     Zotero.debug(`Citekey URL: notify failed: ${String(e)}`);
   }
+}
+
+function addCitekeyURLContextMenuItem() {
+  const win = Zotero.getMainWindow && Zotero.getMainWindow();
+  if (!win || !win.document) return;
+
+  const doc = win.document;
+  const menu = doc.getElementById("zotero-itemmenu");
+  if (!menu) return;
+
+  // Avoid duplicates on reload
+  const existing = doc.getElementById("copy-citekey-link");
+  if (existing) return;
+
+  const XUL_NS =
+    "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+
+  const mi = doc.createElementNS(XUL_NS, "menuitem");
+  mi.id = "copy-citekey-link";
+  mi.setAttribute("label", "Copy citekey link");
+  mi.addEventListener("command", () => copyCitekeyURLForSelection());
+
+  // Optional: only show when exactly one regular item is selected
+  mi.addEventListener("popupshowing", () => {
+    try {
+      const zp = win.ZoteroPane;
+      const items = zp ? zp.getSelectedItems() : [];
+      const ok =
+        items &&
+        items.length === 1 &&
+        items[0] &&
+        items[0].isRegularItem &&
+        items[0].isRegularItem();
+      mi.hidden = !ok;
+    } catch (e) {
+      mi.hidden = false;
+    }
+  });
+
+  menu.appendChild(mi);
+
+  _addedMenuitem = mi;
+  _menuDoc = doc;
+}
+
+function removeCitekeyURLContextMenuItem() {
+  try {
+    if (_addedMenuitem && _addedMenuitem.parentNode) {
+      _addedMenuitem.parentNode.removeChild(_addedMenuitem);
+    }
+  } catch (e) {}
+
+  _addedMenuitem = null;
+  _menuDoc = null;
+}
+
+function copyCitekeyURLForSelection() {
+  const win = Zotero.getMainWindow();
+  const zp = win && win.ZoteroPane;
+  if (!zp) return;
+
+  const items = zp.getSelectedItems();
+  if (!items || items.length !== 1) return;
+
+  const item = items[0];
+  const citekey = (item.getField("citationKey") || "").trim();
+  if (!citekey) {
+    notifyNotFound("(no citation key on item)");
+    return;
+  }
+
+  const url = `${citekey_url_prefix}${encodeURIComponent(citekey)}`;
+
+  // Copy to clipboard (standard XUL/Gecko approach)
+  // Use the window's navigator clipboard helper if available.
+  if (win.navigator && win.navigator.clipboard && win.isSecureContext) {
+    // Might not be available/allowed in chrome; try anyway
+    win.navigator.clipboard
+      .writeText(url)
+      .catch(() => Zotero.Utilities.Internal.copyTextToClipboard(url));
+  } else {
+    // Zotero has internal clipboard helper
+    Zotero.Utilities.Internal.copyTextToClipboard(url);
+  }
+
+  // Optional: temporary notification
+  // try {
+  //   const pw = new Zotero.ProgressWindow({ closeOnClick: true });
+  //   pw.changeHeadline("Select by Citekey");
+  //   pw.addDescription("Citekey link copied to clipboard");
+  //   pw.show();
+  //   pw.startCloseTimer(2500);
+  // } catch (e) {}
 }
 
 function startup(data, reason) {
@@ -58,6 +158,8 @@ function startup(data, reason) {
 
     return;
   };
+
+  addCitekeyURLContextMenuItem();
 }
 
 function shutdown(data, reason) {
@@ -69,16 +171,14 @@ function shutdown(data, reason) {
     Zotero.launchURL = _origLaunchURL;
     _origLaunchURL = null;
   }
+
+  removeCitekeyURLContextMenuItem();
 }
 
 function parseCitekeyURL(spec) {
-  // Change prefix to change the URL schema
-  // Recommend not trying to override the default zotero://select
-  // funny stuff may happen
-  const prefix = "zotero://citekey/select/";
-  if (!spec.startsWith(prefix)) return null;
+  if (!spec.startsWith(citekey_url_prefix)) return null;
 
-  const rest = spec.substring(prefix.length);
+  const rest = spec.substring(citekey_url_prefix.length);
   const qmark = rest.indexOf("?");
   const raw = qmark === -1 ? rest : rest.substring(0, qmark);
   const query = qmark === -1 ? "" : rest.substring(qmark + 1);

@@ -3,9 +3,9 @@
     "citekey-url@dinh.ai": {
       "updates": [
         {
-          "version": "1.0",
-          "update_link": "https://github.com/gdinh/citekey-url/releases/download/1.0/citekey-url.xpi",
-          "update_hash": "sha256:06bfa5c528d982aeecf9b193c54c8dd494d66feab8236ab2d7e4402e276e0890",
+          "version": "1.1",
+          "update_link": "https://github.com/gdinh/citekey-url/releases/download/1.1/citekey-url.xpi",
+          "update_hash": "sha256:e65c1416d2696a03864e5365cd04378a23b9436c9ec8f8263bd6dffeb286b097",
           "applications": {
             "zotero": {
               "strict_min_version": "7.0"
