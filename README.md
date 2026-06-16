@@ -14,7 +14,7 @@ const citekey_url_prefix = "zotero://citekey/select/";
 
 in the code to the prefix of a URL scheme of your choosing.
 
-The assumption is that there is a top-level field called `citationKey`, which exists with Zotero 8 and Better BibTeX. Certain older versions of Zotero/BBT would store the citation key only in the Extra field; these are not supported.
+The assumption is that there is a top-level field called `citationKey`, which exists with Zotero 8+ and Better BibTeX. Certain older versions of Zotero/BBT would store the citation key only in the Extra field; these are not supported.
 
 ## Build instructions
 

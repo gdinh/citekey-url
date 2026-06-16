@@ -1,6 +1,6 @@
 /* bootstrap.js
- * Zotero 8 plugin:
- *   zotero://better-zotero-urls/select/item-by-citekey/<CITEKEY>[?libraryID=1]
+ * Zotero 9 plugin:
+ *   zotero://citekey/select/<CITEKEY>[?libraryID=1]
  *
  * Key points:
  * - Use await s.search() (Zotero API docs).
